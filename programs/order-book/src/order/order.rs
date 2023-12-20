@@ -3,7 +3,6 @@ use anchor_lang::prelude::*;
 
 #[account]
 pub struct Order {
-    pub id: u64,
     pub price: u64,
     pub total: u64,
     pub quantity: u64,

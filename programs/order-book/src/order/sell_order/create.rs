@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-// use crate::order::*;
 use crate::order:: {
     order::*,
     error_code::{ErrorCode::NoTokens},
@@ -62,7 +61,6 @@ pub fn create_sell_order(ctx: Context<CreateSellOrder>, price: u64, quantity: u6
     let order_book = &mut ctx.accounts.order_book;
     let clock = Clock::get()?;
     let order = Order {
-        id: 1,
         price,
         quantity,
         total: quantity * price,
