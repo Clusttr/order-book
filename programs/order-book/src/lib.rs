@@ -1,4 +1,6 @@
 mod order;
+mod direct_sales;
+
 use order::{
     sell_order::create::*
 };
