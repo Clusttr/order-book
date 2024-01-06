@@ -68,6 +68,6 @@ pub fn create_sell_order(ctx: Context<CreateSellOrder>, price: u64, quantity: u6
         is_open: true,
         owner: ctx.accounts.signer.key()
     };
-    order_book.orders.insert(ctx.accounts.signer.key(), order);
+    // order_book.orders.insert(ctx.accounts.signer.key(), order);
     Ok(())
 }

@@ -63,18 +63,18 @@ fn withdraw_sell_order(ctx: Context<UpdateSellOrder>, quantity: u64) -> Result<(
     )?;
 
     //if order does not exist return error
-    let mut order = ctx.accounts.order_book.orders.get(ctx.accounts.signer.key).unwrap();
-    if order.quantity < quantity {
-        return Err(InsufficientWithdrawableToken.into())
-    }
-    order = &Order {
-        price: order.price,
-        total: order.total,
-        quantity: order.quantity - quantity,
-        time_stamp: order.time_stamp,
-        is_open: order.is_open,
-        owner: order.owner
-    };
+    // let mut order = ctx.accounts.order_book.orders.get(ctx.accounts.signer.key).unwrap();
+    // if order.quantity < quantity {
+    //     return Err(InsufficientWithdrawableToken.into())
+    // }
+    // order = &Order {
+    //     price: order.price,
+    //     total: order.total,
+    //     quantity: order.quantity - quantity,
+    //     time_stamp: order.time_stamp,
+    //     is_open: order.is_open,
+    //     owner: order.owner
+    // };
 
     Ok(())
 }

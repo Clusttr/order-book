@@ -9,7 +9,7 @@ use mpl_token_metadata::types::Creator;
 
 #[account]
 struct PriceList {
-    list: HashMap<Pubkey, u64>
+    // list: HashMap<Pubkey, u64>
 }
 
 mod constants {
@@ -62,7 +62,7 @@ fn list_asset(ctx: Context<ListAsset>, amount: u64, price_per_token: u64) -> Res
     )?;
 
     //list asset and price
-    &ctx.accounts.price_list.list.insert(ctx.accounts.mint.key(), amount);
+    // &ctx.accounts.price_list.list.insert(ctx.accounts.mint.key(), amount);
 
     Ok(())
 }
@@ -104,10 +104,10 @@ fn buy_asset(ctx: Context<BuyAsset>, amount: u64) -> Result<()> {
         .unwrap();
 
     let asset = &ctx.accounts.mint.to_account_info();
-    let price = &ctx.accounts.price_list.list.get(asset.key);
-    if price.is_none() { return Err(ErrorCode::AssetNotFound.into()) }
+    let price = 0;//&ctx.accounts.price_list.list.get(asset.key);
+    // if price.is_none() { return Err(ErrorCode::AssetNotFound.into()) }
 
-    let total_amount = amount * price.unwrap();
+    let total_amount = amount * price;//.unwrap();
 
     //confirm creator owns usdc account
     if !&ctx.accounts.creators_usdc_account.owner.eq(&creator.address) {

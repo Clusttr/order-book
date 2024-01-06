@@ -13,5 +13,5 @@ pub struct Order {
 
 #[account]
 pub struct OrderBook {
-    pub orders: HashMap<Pubkey, Order>
+    // pub orders: HashMap<Pubkey, Order>
 }
