@@ -75,6 +75,28 @@ pub fn add_asset(ctx: Context<AddAsset>, amount: u64, price_per_token: u64) -> R
     Ok(())
 }
 
+#[derive(Accounts)]
+pub struct UpdatePrice<'info> {
+    #[account(mut)]
+    signer: Signer<'info>,
+
+    #[account(
+        init_if_needed,
+        seeds = [constants::INVENTORY, mint.key().as_ref()],
+        bump,
+        payer = signer,
+        space = 8 + std::mem::size_of::<Inventory>()
+    )]
+    inventory: Account<'info, Inventory>,
+    mint: Account<'info, Mint>,
+    system_program: Program<'info, System>
+}
+
+pub fn update_price(ctx: Context<UpdatePrice>, price_per_token: u64) -> Result<()> {
+    ctx.accounts.inventory.price = price_per_token;
+    Ok(())
+}
+
 // fn withdraw_asset() -> Result<()> {
 //     Ok(())
 // }

@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor"
-import {Program} from "@coral-xyz/anchor";
+import {Program, Provider} from "@coral-xyz/anchor";
 import {DirectSales} from "../target/types/direct_sales"
 import {createToken} from "../app/utils/metaplex/token";
 import {createMyMint} from "../app/utils/basic/token"
@@ -74,7 +74,27 @@ describe("direct sales", () => {
             console.log(`Price set to: $${inventory.price.toNumber()}`)
             console.log(`Token Added: ${amount.toNumber()} | Initial Tokens : ${initInventory.amount.toNumber()} | Total Tokens : ${inventory.amount.toNumber()}`)
         })
+    })
 
+    it("update price", async () =>  {
+        const initInventory = await program.account.inventory.fetch(INVENTORY_PDA)
+
+        const newPrice = new anchor.BN(47)
+        const tx = await program.methods.updateAssetPrice(newPrice)
+            .accounts({
+                signer: payer.publicKey,
+                inventory: INVENTORY_PDA,
+                mint: mintKeypair.publicKey
+            }).rpc()
+
+        await confirmTx(tx, program.provider)
+
+        const inventory = await program.account.inventory.fetch(INVENTORY_PDA)
+        assert(inventory.price.eq(newPrice), `Failed to set new price: ${newPrice.toNumber()}`)
+
+        print("update prince", () => {
+            console.log(`Previous Price: ${initInventory.price.toNumber()} | New Price: ${inventory.price.toNumber()}`)
+        })
     })
 
 })
@@ -83,4 +103,13 @@ function print(title: string, action: () => void) {
     console.log(`###${title}: START###`)
     action()
     console.log(`###${title}: END###`)
+}
+
+async function confirmTx(tx: string, provider: Provider) {
+    const latestBlockhash = await provider.connection.getLatestBlockhash()
+    await provider.connection.confirmTransaction({
+        signature: tx,
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
+    })
 }

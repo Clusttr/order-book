@@ -8,9 +8,13 @@ use instructions::*;
 #[program]
 pub mod direct_sales {
     use super::*;
-    
+
     pub fn add(ctx: Context<AddAsset>, amount: u64, price_per_token: u64) -> Result<()> {
         add_asset(ctx, amount, price_per_token)
+    }
+
+    pub fn update_asset_price(ctx: Context<UpdatePrice>, price_per_token: u64) -> Result<()> {
+        update_price(ctx, price_per_token)
     }
 }
 
