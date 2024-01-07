@@ -50,7 +50,7 @@ describe("direct sales", () => {
         const tx = await program.methods.add(amount, pricePerToken)
             .accounts({
                 signer: payer.publicKey,
-                singerTokenAccount: userATA.address,
+                signerTokenAccount: userATA.address,
                 inventory: INVENTORY_PDA,
                 tokenVault: TOKEN_VAULT_PDA,
                 mint: mintKeypair.publicKey,
@@ -95,6 +95,27 @@ describe("direct sales", () => {
         print("update prince", () => {
             console.log(`Previous Price: ${initInventory.price.toNumber()} | New Price: ${inventory.price.toNumber()}`)
         })
+    })
+
+    it.only("withdraw token", async () => {
+        const initInventory = await program.account.inventory.fetch(INVENTORY_PDA)
+
+        const amount = new anchor.BN(1)
+        const signerATA = await mintATA()
+        const tx = await program.methods.withdraw(amount)
+            .accounts({
+                signer: payer.publicKey,
+                tokenVault: TOKEN_VAULT_PDA,
+                inventory: INVENTORY_PDA,
+                signerTokenAccount: signerATA.address,
+                mint: mintKeypair.publicKey
+            }).rpc()
+
+        await confirmTx(tx, program.provider)
+
+        const inventory = await program.account.inventory.fetch(INVENTORY_PDA)
+        assert(inventory.amount.toNumber() == initInventory.amount.toNumber() - amount.toNumber(),
+            `Failed to withdraw: ${amount.toNumber()}`)
     })
 
 })

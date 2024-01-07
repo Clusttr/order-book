@@ -16,6 +16,10 @@ pub mod direct_sales {
     pub fn update_asset_price(ctx: Context<UpdatePrice>, price_per_token: u64) -> Result<()> {
         update_price(ctx, price_per_token)
     }
+
+    pub fn withdraw(ctx: Context<WithdrawAsset>, amount: u64) -> Result<()> {
+        withdraw_asset(ctx, amount)
+    }
 }
 
 #[derive(Accounts)]
