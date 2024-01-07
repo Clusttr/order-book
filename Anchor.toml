@@ -2,6 +2,7 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
+direct_sales = "EVH3WpdE7b8w28mm55T392dA24dVk58tDk78Dq6CgGjK"
 order_book = "CyhM6NKXeZs3xsC9ZVJEQikAnUwRhW3qkzqPA9zkUbtz"
 
 [registry]
