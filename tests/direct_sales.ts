@@ -7,6 +7,7 @@ import {Connection, Keypair, LAMPORTS_PER_SOL, PublicKey} from "@solana/web3.js"
 // import {publicKey, publicKeyBytes} from "@metaplex-foundation/umi";
 import {getOrCreateAssociatedTokenAccount} from "@solana/spl-token";
 import {assert} from "chai";
+import {publicKey} from "@metaplex-foundation/umi";
 
 describe("direct sales", () => {
 
@@ -37,6 +38,16 @@ describe("direct sales", () => {
             provider.connection,
             payer.payer,
             mintKeypair.publicKey,
+            payer.publicKey
+        )
+    }
+
+    const usdcPubKey = new PublicKey("HKagbtJvkDd9n5pSumWq7HsQTJLF7skZsrdt8iyqjv5D")
+    async function usdcATA() {
+        return await getOrCreateAssociatedTokenAccount(
+            provider.connection,
+            payer.payer,
+            usdcPubKey,
             payer.publicKey
         )
     }
@@ -97,7 +108,7 @@ describe("direct sales", () => {
         })
     })
 
-    it.only("withdraw token", async () => {
+    it("withdraw token", async () => {
         const initInventory = await program.account.inventory.fetch(INVENTORY_PDA)
 
         const amount = new anchor.BN(1)
@@ -121,11 +132,27 @@ describe("direct sales", () => {
     it.only("buy asset", async () => {
         const initInventory = await program.account.inventory.fetch(INVENTORY_PDA)
 
+        const signerUSDCAcc = await usdcATA()
+        const signerMintAcc = await mintATA()
+
         const amount = new anchor.BN(1)
         const tx = await  program.methods.buy(amount)
-            .accounts({})
+            .accounts({
+                signer: payer.publicKey,
+                signerUsdcAccount: signerUSDCAcc.address, // f change to another payer
+                signerMintAccount: signerMintAcc.address, // f change to another payer
+                creatorAccount: payer.publicKey, // g
+                creatorsUsdcAccount: signerUSDCAcc.address, // g
+                usdcMint: usdcPubKey, // g
+                // priceList: payer.publicKey, //r
+                tokenVault: TOKEN_VAULT_PDA, //g
+                inventory: INVENTORY_PDA, //g
+                mint: mintKeypair.publicKey //g
+            })
             .signers([])
             .rpc()
+
+        console.log({tx})
     })
 })
 

@@ -175,6 +175,7 @@ pub struct BuyAsset<'info> {
     )]
     signer_usdc_account: Account<'info, TokenAccount>,
     #[account(
+        mut,
         associated_token::mint = mint,
         associated_token::authority = signer
     )]
@@ -190,19 +191,11 @@ pub struct BuyAsset<'info> {
     usdc_mint: Account<'info, Mint>,
 
     #[account(
-        init_if_needed,
-        seeds = [],
-        bump,
-        payer = signer,
-        space = 8 + std::mem::size_of::<Inventory>()
-    )]
-    pub price_list: Account<'info, Inventory>,
-
-    #[account(
-        init_if_needed,
+        mut,
+        // init_if_needed,
         seeds = [constants::VAULT, mint.key().as_ref()],
         bump,
-        payer = signer,
+        // payer = signer,
         token::mint = mint,
         token::authority = token_vault
     )]
@@ -222,8 +215,16 @@ pub struct BuyAsset<'info> {
 }
 
 pub fn buy_asset(ctx: Context<BuyAsset>, amount: u64) -> Result<()> {
-    let price = &ctx.accounts.price_list.price;
+    let price = &ctx.accounts.inventory.price;
     let total_amount = amount * price;
+
+    //check balance in usdc account
+    let sender_balance = ctx.accounts.signer_usdc_account.amount;
+    msg!("sender usdc balance: ${}", sender_balance);
+    println!("sender usdc balance: ${}", sender_balance);
+    if sender_balance < total_amount {
+        return Err(ErrorCode::InsufficientUSDCBalance.into())
+    }
 
     transfer(
         CpiContext::new(
@@ -238,19 +239,24 @@ pub fn buy_asset(ctx: Context<BuyAsset>, amount: u64) -> Result<()> {
     )?;
 
     //transfer asset from vault to buyer
-    let bump = *ctx.bumps.get("creators_usdc_account").unwrap();
+    let token_amount = ctx.accounts.inventory.amount;
+    if token_amount < amount {
+        return Err(ErrorCode::InsufficientUSDCBalance.into())
+    }
+    let bump = *ctx.bumps.get("token_vault").unwrap();
     let mint_key = ctx.accounts.mint.key();
-    let seed:&[&[&[u8]]] = &[&[constants::VAULT, mint_key.as_ref(), &[bump]]];
+    let seeds = &[constants::VAULT, mint_key.as_ref(), &[bump]];
+    let signer: &[&[&[u8]]] = &[seeds];
 
     transfer(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             Transfer {
                 from: ctx.accounts.token_vault.to_account_info(),
-                to: ctx.accounts.creators_usdc_account.to_account_info(),
+                to: ctx.accounts.signer_mint_account.to_account_info(),
                 authority: ctx.accounts.token_vault.to_account_info()
             },
-            seed
+            signer
         ),
         amount
     )?;
@@ -284,6 +290,8 @@ pub enum ErrorCode {
     OnlyPermittedByCreator,
     #[msg("Can't find asset")]
     AssetNotFound,
+    #[msg("Insufficient usdc Balance")]
+    InsufficientUSDCBalance,
     #[msg("USDC Account passed is not owned by creator")]
     FalseUSDCAccount
 }
