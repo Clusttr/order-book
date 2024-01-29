@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{
     token::{Token, TokenAccount, Mint, transfer, Transfer},
 };
+use anchor_spl::associated_token::get_associated_token_address;
 use mpl_token_metadata::accounts::{Metadata};
 use mpl_token_metadata::types::Creator;
 
@@ -162,82 +163,104 @@ pub fn withdraw_asset(ctx: Context<WithdrawAsset>, amount: u64) -> Result<()> {
     Ok(())
 }
 
-// #[derive(Accounts)]
-// struct BuyAsset<'info> {
-//     #[account(mut)]
-//     signer: Signer<'info>,
-//
-//     #[account()]
-//     creators_usdc_account: Account<'info, TokenAccount>,
-//
-//     #[account(
-//         init_if_needed,
-//         seeds = [],
-//         bump,
-//         payer = signer,
-//         space = 8 + std::mem::size_of::<Inventory>()
-//     )]
-//     pub price_list: Account<'info, Inventory>,
-//
-//     #[account(
-//         mut,
-//         seeds = [],
-//         bump,
-//     )]
-//     token_vault: Account<'info, TokenAccount>,
-//     mint: Account<'info, Mint>,
-//     token_program: Program<'info, Token>,
-//     system_program: Program<'info, System>
-// }
-//
-// fn buy_asset(ctx: Context<BuyAsset>, amount: u64) -> Result<()> {
-//     let creator = get_creator(&ctx.accounts.token_vault.to_account_info())
-//         .unwrap();
-//
-//     let asset = &ctx.accounts.mint.to_account_info();
-//     let price = 0;//&ctx.accounts.price_list.list.get(asset.key);
-//     // if price.is_none() { return Err(ErrorCode::AssetNotFound.into()) }
-//
-//     let total_amount = amount * price;//.unwrap();
-//
-//     //confirm creator owns usdc account
-//     if !&ctx.accounts.creators_usdc_account.owner.eq(&creator.address) {
-//         return Err(ErrorCode::FalseUSDCAccount.into())
-//     }
-//
-//     //transfer amount from user wallet to creators wallet
-//     transfer(
-//         CpiContext::new(
-//             ctx.accounts.token_program.to_account_info(),
-//             Transfer{
-//                 from: ctx.accounts.signer.to_account_info(),
-//                 to: ctx.accounts.creators_usdc_account.to_account_info(),
-//                 authority: ctx.accounts.signer.to_account_info()
-//             }
-//         ),
-//         total_amount
-//     )?;
-//
-//     let bump = *ctx.bumps.get("creators_usdc_account").unwrap();
-//     let seed: &[&[&[u8]]] = &[&[&[bump]]];
-//
-//     //transfer asset from vault to buyer
-//     transfer(
-//         CpiContext::new_with_signer(
-//             ctx.accounts.token_program.to_account_info(),
-//             Transfer {
-//                 from: ctx.accounts.token_vault.to_account_info(),
-//                 to: ctx.accounts.creators_usdc_account.to_account_info(),
-//                 authority: ctx.accounts.token_vault.to_account_info()
-//             },
-//             seed
-//         ),
-//         amount
-//     )?;
-//
-//     Ok(())
-// }
-//
+#[derive(Accounts)]
+pub struct BuyAsset<'info> {
+    #[account(mut)]
+    signer: Signer<'info>,
+
+    #[account(
+        mut,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = signer
+    )]
+    signer_usdc_account: Account<'info, TokenAccount>,
+    #[account(
+        associated_token::mint = mint,
+        associated_token::authority = signer
+    )]
+    signer_mint_account: Account<'info, TokenAccount>,
+
+    /// CHECK: This will revisited
+    creator_account: AccountInfo<'info>,
+    #[account(
+        associated_token::mint = usdc_mint,
+        associated_token::authority = creator_account
+    )]
+    creators_usdc_account: Account<'info, TokenAccount>,
+    usdc_mint: Account<'info, Mint>,
+
+    #[account(
+        init_if_needed,
+        seeds = [],
+        bump,
+        payer = signer,
+        space = 8 + std::mem::size_of::<Inventory>()
+    )]
+    pub price_list: Account<'info, Inventory>,
+
+    #[account(
+        init_if_needed,
+        seeds = [constants::VAULT, mint.key().as_ref()],
+        bump,
+        payer = signer,
+        token::mint = mint,
+        token::authority = token_vault
+    )]
+    token_vault: Account<'info, TokenAccount>,
+
+    #[account(
+        init_if_needed,
+        seeds = [constants::INVENTORY, mint.key().as_ref()],
+        bump,
+        payer = signer,
+        space = 8 + std::mem::size_of::<Inventory>()
+    )]
+    inventory: Account<'info, Inventory>,
+    mint: Account<'info, Mint>,
+    token_program: Program<'info, Token>,
+    system_program: Program<'info, System>
+}
+
+pub fn buy_asset(ctx: Context<BuyAsset>, amount: u64) -> Result<()> {
+    let price = &ctx.accounts.price_list.price;
+    let total_amount = amount * price;
+
+    transfer(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            Transfer{
+                from: ctx.accounts.signer_usdc_account.to_account_info(),
+                to: ctx.accounts.creators_usdc_account.to_account_info(),
+                authority: ctx.accounts.signer.to_account_info()
+            }
+        ),
+        total_amount
+    )?;
+
+    //transfer asset from vault to buyer
+    let bump = *ctx.bumps.get("creators_usdc_account").unwrap();
+    let mint_key = ctx.accounts.mint.key();
+    let seed:&[&[&[u8]]] = &[&[constants::VAULT, mint_key.as_ref(), &[bump]]];
+
+    transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.token_vault.to_account_info(),
+                to: ctx.accounts.creators_usdc_account.to_account_info(),
+                authority: ctx.accounts.token_vault.to_account_info()
+            },
+            seed
+        ),
+        amount
+    )?;
+
+    //update inventory
+    ctx.accounts.inventory.amount -= amount;
+
+    Ok(())
+}
+
 fn get_creator(mint_account_info: &AccountInfo) -> Result<Creator> {
     let metadata = Metadata::try_from(mint_account_info).unwrap();
     let creators = metadata.creators.unwrap();

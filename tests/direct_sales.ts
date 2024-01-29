@@ -118,6 +118,15 @@ describe("direct sales", () => {
             `Failed to withdraw: ${amount.toNumber()}`)
     })
 
+    it.only("buy asset", async () => {
+        const initInventory = await program.account.inventory.fetch(INVENTORY_PDA)
+
+        const amount = new anchor.BN(1)
+        const tx = await  program.methods.buy(amount)
+            .accounts({})
+            .signers([])
+            .rpc()
+    })
 })
 
 function print(title: string, action: () => void) {

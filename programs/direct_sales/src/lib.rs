@@ -7,6 +7,7 @@ use instructions::*;
 
 #[program]
 pub mod direct_sales {
+    use anchor_spl::token::accessor::amount;
     use super::*;
 
     pub fn add(ctx: Context<AddAsset>, amount: u64, price_per_token: u64) -> Result<()> {
@@ -19,6 +20,10 @@ pub mod direct_sales {
 
     pub fn withdraw(ctx: Context<WithdrawAsset>, amount: u64) -> Result<()> {
         withdraw_asset(ctx, amount)
+    }
+
+    pub fn buy(ctx: Context<BuyAsset>, amount: u64) -> Result<()> {
+        buy_asset(ctx, amount)
     }
 }
 
