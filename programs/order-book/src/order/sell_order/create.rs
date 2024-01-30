@@ -58,9 +58,9 @@ pub fn create_sell_order(ctx: Context<CreateSellOrder>, price: u64, quantity: u6
         quantity
     )?;
 
-    let order_book = &mut ctx.accounts.order_book;
+    let _order_book = &mut ctx.accounts.order_book;
     let clock = Clock::get()?;
-    let order = Order {
+    let _order = Order {
         price,
         quantity,
         total: quantity * price,

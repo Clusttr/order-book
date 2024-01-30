@@ -1,9 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount, transfer, Transfer};
 use crate::order::{
-    order::{OrderBook, Order},
+    order::{ OrderBook },
     constants::*,
-    error_code::*,
 };
 use crate::order::error_code::ErrorCode::InsufficientWithdrawableToken;
 
@@ -38,8 +37,7 @@ pub struct UpdateSellOrder<'info> {
     system_program: Program<'info, System>
 }
 
-fn withdraw_sell_order(ctx: Context<UpdateSellOrder>, quantity: u64) -> Result<()> {
-
+fn _withdraw_sell_order(ctx: Context<UpdateSellOrder>, quantity: u64) -> Result<()> {
     let bump = *ctx.bumps.get("asset_account").unwrap();
     // let payer_binary_pub_key = *ctx.accounts.asset_account.key().as_ref();
     let asset_account_seed: &[&[&[u8]]] = &[&[&[bump]]];
