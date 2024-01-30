@@ -2,16 +2,20 @@ use anchor_lang::prelude::*;
 
 declare_id!("EVH3WpdE7b8w28mm55T392dA24dVk58tDk78Dq6CgGjK");
 
+// mod dep_instructions;
 mod instructions;
+mod models;
+mod utils;
+
 use instructions::*;
+
 
 #[program]
 pub mod direct_sales {
-    use anchor_spl::token::accessor::amount;
     use super::*;
 
-    pub fn add(ctx: Context<AddAsset>, amount: u64, price_per_token: u64) -> Result<()> {
-        add_asset(ctx, amount, price_per_token)
+    pub fn add(ctx: Context<DepositAsset>, amount: u64, price_per_token: u64) -> Result<()> {
+        deposit_asset(ctx, amount, price_per_token)
     }
 
     pub fn update_asset_price(ctx: Context<UpdatePrice>, price_per_token: u64) -> Result<()> {
